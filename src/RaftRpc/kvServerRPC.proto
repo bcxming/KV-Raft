@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package raftKVRpc; 
+
+option cc_generic_services = true;  
+
+// 日志实体
+message GetArgs{
+  bytes Key = 1 ;
+  bytes ClientId = 2 ;
+  int32 RequestId = 3;
+}
+
+message GetReply  {
+  bytes Err = 1;
+  bytes Value = 2;
+}
+
+message PutAppendArgs  {
+  bytes Key = 1;
+  bytes  Value = 2 ;
+  bytes  Op = 3;
+  bytes  ClientId = 4;
+  int32  RequestId = 5;
+}
+
+message PutAppendReply  {
+  bytes Err = 1;
+}
+
+service kvServerRpc
+{
+  rpc PutAppend(PutAppendArgs) returns(PutAppendReply);
+  rpc Get (GetArgs) returns (GetReply);
+}
+
