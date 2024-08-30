@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -rdynamic CMakeFiles/provider.dir/friendService.cpp.o CMakeFiles/provider.dir/__/friend.pb.cc.o -o ../../../../bin/provider   -L/home/ubuntu/KV-Raft/lib  -Wl,-rpath,/home/ubuntu/KV-Raft/lib ../../../../lib/librpc_lib.a -lmuduo_net -lmuduo_base -lpthread -lprotobuf -lboost_serialization 
