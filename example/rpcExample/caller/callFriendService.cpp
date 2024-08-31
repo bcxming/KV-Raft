@@ -1,6 +1,3 @@
-//
-// Created by swx on 23-12-21.
-//
 #include <iostream>
 
 // #include "mprpcapplication.h"
@@ -11,7 +8,6 @@
 #include "rpcprovider.h"
 
 int main(int argc, char **argv) {
-  // https://askubuntu.com/questions/754213/what-is-difference-between-localhost-address-127-0-0-1-and-127-0-1-1
   std::string ip = "127.0.1.1";
   short port = 7788;
 
@@ -25,7 +21,6 @@ int main(int argc, char **argv) {
   fixbug::GetFriendsListResponse response;
   // 发起rpc方法的调用,消费这的stub最后都会调用到channel的 call_method方法  同步的rpc调用过程  MprpcChannel::callmethod
   MprpcController controller;
-  //長連接測試 ，發送10次請求
   int count = 10;
   while (count--) {
     std::cout << " 倒数" << count << "次发起RPC请求" << std::endl;

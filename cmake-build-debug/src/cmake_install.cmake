@@ -44,7 +44,6 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/ubuntu/KV-Raft/cmake-build-debug/src/skipList/cmake_install.cmake")
   include("/home/ubuntu/KV-Raft/cmake-build-debug/src/common/cmake_install.cmake")
   include("/home/ubuntu/KV-Raft/cmake-build-debug/src/rpc/cmake_install.cmake")
   include("/home/ubuntu/KV-Raft/cmake-build-debug/src/raftRpcPro/cmake_install.cmake")

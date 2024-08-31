@@ -77,52 +77,51 @@ void KvServer::ExecutePutOpOnKVDB(Op op) {
 
 // 处理来自clerk的Get RPC
 void KvServer::Get(const raftKVRpcProctoc::GetArgs *args, raftKVRpcProctoc::GetReply *reply) {
+  // 创建一个操作对象 op，用于记录获取操作的相关信息
   Op op;
-  op.Operation = "Get";
-  op.Key = args->key();
-  op.Value = "";
-  op.ClientId = args->clientid();
-  op.RequestId = args->requestid();
+  op.Operation = "Get";              // 操作类型为 Get
+  op.Key = args->key();              // 获取操作的键
+  op.Value = "";                     // 初始化操作的值为空字符串
+  op.ClientId = args->clientid();    // 记录客户端 ID
+  op.RequestId = args->requestid();  // 记录请求 ID
 
-  int raftIndex = -1;
+  // 发起 Raft 节点的操作，并获取操作的结果
+  int raftIndex = -1;  // Raft 日志索引
   int _ = -1;
-  bool isLeader = false;
-  m_raftNode->Start(op, &raftIndex, &_,
-                    &isLeader);  // raftIndex：raft预计的logIndex
-                                 // ，虽然是预计，但是正确情况下是准确的，op的具体内容对raft来说 是隔离的
+  bool isLeader = false;                             // 是否是领导者
+  m_raftNode->Start(op, &raftIndex, &_, &isLeader);  // 启动 Raft 节点的操作，并获取结果
 
+  // 如果当前节点不是领导者，则返回错误信息给客户端
   if (!isLeader) {
     reply->set_err(ErrWrongLeader);
     return;
   }
 
-  // create waitForCh
+  // 上锁以保护共享资源
   m_mtx.lock();
 
+  // 如果等待应用操作的队列中没有与当前 raftIndex 对应的通道，则创建一个新的通道并添加到队列中
   if (waitApplyCh.find(raftIndex) == waitApplyCh.end()) {
     waitApplyCh.insert(std::make_pair(raftIndex, new LockQueue<Op>()));
   }
   auto chForRaftIndex = waitApplyCh[raftIndex];
 
-  m_mtx.unlock();  //直接解锁，等待任务执行完成，不能一直拿锁等待
+  // 解锁以允许其他线程继续执行
+  m_mtx.unlock();
 
-  // timeout
+  // 如果超时，处理超时情况
   Op raftCommitOp;
-
   if (!chForRaftIndex->timeOutPop(CONSENSUS_TIMEOUT, &raftCommitOp)) {
-    //        DPrintf("[GET TIMEOUT!!!]From Client %d (Request %d) To Server %d, key %v, raftIndex %d", args.ClientId,
-    //        args.RequestId, kv.me, op.Key, raftIndex)
-    // todo 2023年06月01日
     int _ = -1;
     bool isLeader = false;
     m_raftNode->GetState(&_, &isLeader);
 
+    // 如果请求是重复的并且当前节点是领导者，则在数据库中执行 Get 操作
     if (ifRequestDuplicate(op.ClientId, op.RequestId) && isLeader) {
-      //如果超时，代表raft集群不保证已经commitIndex该日志，但是如果是已经提交过的get请求，是可以再执行的。
-      // 不会违反线性一致性
       std::string value;
       bool exist = false;
       ExecuteGetOpOnKVDB(op, &value, &exist);
+      // 如果键存在，则设置返回值为键对应的值，否则设置错误类型为 ErrNoKey
       if (exist) {
         reply->set_err(OK);
         reply->set_value(value);
@@ -131,18 +130,16 @@ void KvServer::Get(const raftKVRpcProctoc::GetArgs *args, raftKVRpcProctoc::GetR
         reply->set_value("");
       }
     } else {
-      reply->set_err(ErrWrongLeader);  //返回这个，其实就是让clerk换一个节点重试
+      // 如果请求不是重复的或者当前节点不是领导者，则返回错误信息给客户端
+      reply->set_err(ErrWrongLeader);
     }
   } else {
-    // raft已经提交了该command（op），可以正式开始执行了
-    //         DPrintf("[WaitChanGetRaftApplyMessage<--]Server %d , get Command <-- Index:%d , ClientId %d, RequestId
-    //         %d, Opreation %v, Key :%v, Value :%v", kv.me, raftIndex, op.ClientId, op.RequestId, op.Operation, op.Key,
-    //         op.Value)
-    // todo 这里还要再次检验的原因：感觉不用检验，因为leader只要正确的提交了，那么这些肯定是符合的
+    // 如果 Raft 已经提交了该操作，则在数据库中执行 Get 操作
     if (raftCommitOp.ClientId == op.ClientId && raftCommitOp.RequestId == op.RequestId) {
       std::string value;
       bool exist = false;
       ExecuteGetOpOnKVDB(op, &value, &exist);
+      // 如果键存在，则设置返回值为键对应的值，否则设置错误类型为 ErrNoKey
       if (exist) {
         reply->set_err(OK);
         reply->set_value(value);
@@ -151,17 +148,19 @@ void KvServer::Get(const raftKVRpcProctoc::GetArgs *args, raftKVRpcProctoc::GetR
         reply->set_value("");
       }
     } else {
+      // 如果操作不是提交的或者客户端 ID 或请求 ID 不匹配，则返回错误信息给客户端
       reply->set_err(ErrWrongLeader);
-      //            DPrintf("[GET ] 不满足：raftCommitOp.ClientId{%v} == op.ClientId{%v} && raftCommitOp.RequestId{%v}
-      //            == op.RequestId{%v}", raftCommitOp.ClientId, op.ClientId, raftCommitOp.RequestId, op.RequestId)
     }
   }
-  m_mtx.lock();  // todo 這個可以先弄一個defer，因爲刪除優先級並不高，先把rpc發回去更加重要
+
+  // 再次上锁以保护共享资源，删除等待应用操作的队列中与 raftIndex 对应的通道，并释放内存
+  m_mtx.lock();
   auto tmp = waitApplyCh[raftIndex];
   waitApplyCh.erase(raftIndex);
   delete tmp;
   m_mtx.unlock();
 }
+
 
 void KvServer::GetCommandFromRaft(ApplyMsg message) {
   Op op;
@@ -306,19 +305,6 @@ void KvServer::ReadSnapShotToInstall(std::string snapshot) {
     return;
   }
   parseFromString(snapshot);
-
-  //    r := bytes.NewBuffer(snapshot)
-  //    d := labgob.NewDecoder(r)
-  //
-  //    var persist_kvdb map[string]string  //理应快照
-  //    var persist_lastRequestId map[int64]int //快照这个为了维护线性一致性
-  //
-  //    if d.Decode(&persist_kvdb) != nil || d.Decode(&persist_lastRequestId) != nil {
-  //                DPrintf("KVSERVER %d read persister got a problem!!!!!!!!!!",kv.me)
-  //        } else {
-  //        kv.kvDB = persist_kvdb
-  //        kv.lastRequestId = persist_lastRequestId
-  //    }
 }
 
 bool KvServer::SendMessageToWaitChan(const Op &op, int raftIndex) {

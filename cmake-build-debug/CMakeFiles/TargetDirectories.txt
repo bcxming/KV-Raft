@@ -4,8 +4,6 @@
 /home/ubuntu/KV-Raft/cmake-build-debug/CMakeFiles/rebuild_cache.dir
 /home/ubuntu/KV-Raft/cmake-build-debug/src/CMakeFiles/edit_cache.dir
 /home/ubuntu/KV-Raft/cmake-build-debug/src/CMakeFiles/rebuild_cache.dir
-/home/ubuntu/KV-Raft/cmake-build-debug/src/skipList/CMakeFiles/edit_cache.dir
-/home/ubuntu/KV-Raft/cmake-build-debug/src/skipList/CMakeFiles/rebuild_cache.dir
 /home/ubuntu/KV-Raft/cmake-build-debug/src/common/CMakeFiles/edit_cache.dir
 /home/ubuntu/KV-Raft/cmake-build-debug/src/common/CMakeFiles/rebuild_cache.dir
 /home/ubuntu/KV-Raft/cmake-build-debug/src/rpc/CMakeFiles/rpc_lib.dir

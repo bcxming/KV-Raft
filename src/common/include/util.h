@@ -18,6 +18,8 @@
 #include <thread>
 #include "config.h"
 
+
+//这种技术通常用于在作用域结束时执行某些清理工作，比如释放资源、关闭文件等
 template <class F>
 class DeferClass {
  public:
@@ -31,8 +33,9 @@ class DeferClass {
  private:
   F m_func;
 };
-
+//将两个参数连接成一个新的标识符
 #define _CONCAT(a, b) a##b
+// 它将在代码的当前行（通过 __LINE__ 获取）生成一个具有唯一名称的 DeferClass 实例
 #define _MAKE_DEFER_(line) DeferClass _CONCAT(defer_placeholder, line) = [&]()
 
 #undef DEFER
@@ -42,6 +45,7 @@ void DPrintf(const char* format, ...);
 
 void myAssert(bool condition, std::string message = "Assertion failed!");
 
+// 使用可变参数模板定义了一个格式化字符串函数，可以接受任意数量和类型的参数
 template <typename... Args>
 std::string format(const char* format_str, Args... args) {
   std::stringstream ss;
@@ -121,15 +125,12 @@ class LockQueue {
 // 这个Op是kv传递给raft的command
 class Op {
  public:
-  // Your definitions here.
-  // Field names must start with capital letters,
-  // otherwise RPC will break.
+  // 字段名必须以大写字母开头，否则会影响RPC通信
   std::string Operation;  // "Get" "Put" "Append"
-  std::string Key;
-  std::string Value;
+  std::string Key;// 键值
+  std::string Value;// 值
   std::string ClientId;  //客户端号码
   int RequestId;         //客户端号码请求的Request的序列号，为了保证线性一致性
-                         // IfDuplicate bool // Duplicate command can't be applied twice , but only for PUT and APPEND
 
  public:
   // todo
@@ -139,7 +140,7 @@ class Op {
     std::stringstream ss;
     boost::archive::text_oarchive oa(ss);
 
-    // write class instance to archive
+    // 将Op对象写入存档
     oa << *this;
     // close archive
 
@@ -149,12 +150,12 @@ class Op {
   bool parseFromString(std::string str) {
     std::stringstream iss(str);
     boost::archive::text_iarchive ia(iss);
-    // read class state from archive
     ia >> *this;
-    return true;  // todo : 解析失敗如何處理，要看一下boost庫了
+    return true;  // todo: 如何处理解析失败，需要查看boost库
   }
 
  public:
+ // 重载流输出操作符，以自定义格式打印Op对象
   friend std::ostream& operator<<(std::ostream& os, const Op& obj) {
     os << "[MyClass:Operation{" + obj.Operation + "},Key{" + obj.Key + "},Value{" + obj.Value + "},ClientId{" +
               obj.ClientId + "},RequestId{" + std::to_string(obj.RequestId) + "}";  // 在这里实现自定义的输出格式
@@ -163,6 +164,7 @@ class Op {
 
  private:
   friend class boost::serialization::access;
+    // 序列化Op对象
   template <class Archive>
   void serialize(Archive& ar, const unsigned int version) {
     ar& Operation;
@@ -185,18 +187,5 @@ bool isReleasePort(unsigned short usPort);
 
 bool getReleasePort(short& port);
 
-// int main(int argc, char** argv)
-//{
-//     short port = 9060;
-//     if(getReleasePort(port)) //在port的基础上获取一个可用的port
-//     {
-//         std::cout << "可用的端口号为：" << port << std::endl;
-//     }
-//     else
-//     {
-//         std::cout << "获取可用端口号失败！" << std::endl;
-//     }
-//     return 0;
-// }
 
 #endif  //  UTIL_H

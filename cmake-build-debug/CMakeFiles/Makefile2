@@ -167,7 +167,6 @@ example/rpcExample/caller/clean: example/rpcExample/caller/CMakeFiles/consumer.d
 # Directory level rules for directory src
 
 # Recursive "all" directory target.
-src/all: src/skipList/all
 src/all: src/common/all
 src/all: src/rpc/all
 src/all: src/raftRpcPro/all
@@ -176,7 +175,6 @@ src/all: src/raftClerk/all
 .PHONY : src/all
 
 # Recursive "preinstall" directory target.
-src/preinstall: src/skipList/preinstall
 src/preinstall: src/common/preinstall
 src/preinstall: src/rpc/preinstall
 src/preinstall: src/raftRpcPro/preinstall
@@ -185,7 +183,6 @@ src/preinstall: src/raftClerk/preinstall
 .PHONY : src/preinstall
 
 # Recursive "clean" directory target.
-src/clean: src/skipList/clean
 src/clean: src/common/clean
 src/clean: src/rpc/clean
 src/clean: src/raftRpcPro/clean
@@ -267,21 +264,6 @@ src/rpc/preinstall:
 # Recursive "clean" directory target.
 src/rpc/clean: src/rpc/CMakeFiles/rpc_lib.dir/clean
 .PHONY : src/rpc/clean
-
-#=============================================================================
-# Directory level rules for directory src/skipList
-
-# Recursive "all" directory target.
-src/skipList/all:
-.PHONY : src/skipList/all
-
-# Recursive "preinstall" directory target.
-src/skipList/preinstall:
-.PHONY : src/skipList/preinstall
-
-# Recursive "clean" directory target.
-src/skipList/clean:
-.PHONY : src/skipList/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/skip_list_on_raft.dir

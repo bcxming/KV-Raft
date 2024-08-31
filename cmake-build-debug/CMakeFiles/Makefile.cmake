@@ -22,7 +22,6 @@ set(CMAKE_MAKEFILE_DEPENDS
   "../src/raftCore/CMakeLists.txt"
   "../src/raftRpcPro/CMakeLists.txt"
   "../src/rpc/CMakeLists.txt"
-  "../src/skipList/CMakeLists.txt"
   "/usr/share/cmake-3.22/Modules/CMakeCInformation.cmake"
   "/usr/share/cmake-3.22/Modules/CMakeCXXInformation.cmake"
   "/usr/share/cmake-3.22/Modules/CMakeCommonLanguageInclude.cmake"
@@ -61,7 +60,6 @@ set(CMAKE_MAKEFILE_OUTPUTS
 set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   "src/CMakeFiles/CMakeDirectoryInformation.cmake"
-  "src/skipList/CMakeFiles/CMakeDirectoryInformation.cmake"
   "src/common/CMakeFiles/CMakeDirectoryInformation.cmake"
   "src/rpc/CMakeFiles/CMakeDirectoryInformation.cmake"
   "src/raftRpcPro/CMakeFiles/CMakeDirectoryInformation.cmake"
