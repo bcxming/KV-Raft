@@ -485,15 +485,34 @@ void Raft::leaderHearBeatTicker() {
       usleep(1000 * HeartBeatTimeout);
       // std::this_thread::sleep_for(std::chrono::milliseconds(HeartBeatTimeout));
     }
-    static std::atomic<int32_t> atomicCount = 0;
+  static std::atomic<int32_t> atomicCount = 0;
+  // 声明一个静态的原子整型变量 atomicCount，初始值为 0。
+  // 原子变量保证了对它的读写操作是线程安全的。
 
-    std::chrono::duration<signed long int, std::ratio<1, 1000000000>> suitableSleepTime{};
-    std::chrono::system_clock::time_point wakeTime{};
-    {
+  std::chrono::duration<signed long int, std::ratio<1, 1000000000>> suitableSleepTime{};
+  // 声明一个 duration 变量 suitableSleepTime，其单位为纳秒 (nanoseconds)。
+  // 初始值为零，表示没有经过的时间。
+
+  std::chrono::system_clock::time_point wakeTime{};
+  // 声明一个 system_clock 的 time_point 变量 wakeTime。
+  // 初始值为默认构造的时间点，通常代表一个未定义的时间点。
+
+  {
       std::lock_guard<std::mutex> lock(m_mtx);
+      // 创建一个 std::lock_guard 对象 lock，它会在构造时自动锁定互斥锁 m_mtx，
+      // 并且在作用域结束时自动解锁 m_mtx。这确保了代码块内的操作是线程安全的。
+
       wakeTime = now();
+      // 获取当前时间点，并将其赋值给 wakeTime。
+
       suitableSleepTime = std::chrono::milliseconds(HeartBeatTimeout) + m_lastResetHearBeatTime - wakeTime;
-    }
+      // 计算合适的睡眠时间：
+      // 1. 将心跳超时时间 HeartBeatTimeout 转换为毫秒。
+      // 2. 加上上次重置心跳时间 m_lastResetHearBeatTime。
+      // 3. 减去当前时间点 wakeTime。
+      // 结果是一个 duration，表示从现在起到预期的下一次心跳的时间差。
+  }
+  // lock_guard 对象的作用域在此结束，m_mtx 自动解锁。
 
     if (std::chrono::duration<double, std::milli>(suitableSleepTime).count() > 1) {
       std::cout << atomicCount << "\033[1;35m leaderHearBeatTicker();函数设置睡眠时间为: "
