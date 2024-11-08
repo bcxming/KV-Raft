@@ -168,59 +168,71 @@ level 0         1    4   9 10         30   40  | 50 |  60      70       100
 */
 template <typename K, typename V>
 int SkipList<K, V>::insert_element(const K key, const V value) {
+  // 加锁以确保线程安全，因为多个线程可能同时插入元素
   _mtx.lock();
+
+  // current 指向跳表的头结点，表示从头结点开始遍历跳表
   Node<K, V> *current = this->_header;
 
-  // create update array and initialize it
-  // update is array which put node that the node->forward[i] should be operated later
+  // 创建一个 update 数组，用来存储在每一层找到的待插入位置的前驱节点
+  // update[i] 将存储第 i 层的前驱节点，这些节点的 forward[i] 需要在插入后更新
   Node<K, V> *update[_max_level + 1];
+  // 初始化 update 数组的所有元素为 nullptr
   memset(update, 0, sizeof(Node<K, V> *) * (_max_level + 1));
 
-  // start form highest level of skip list
+  // 从跳表的最高层开始查找合适的位置插入新节点
   for (int i = _skip_list_level; i >= 0; i--) {
+    // 沿着第 i 层的 forward 指针遍历，直到找到一个比 key 大或等于的节点
     while (current->forward[i] != NULL && current->forward[i]->get_key() < key) {
-      current = current->forward[i];
+      current = current->forward[i];  // 向前移动指针，直到当前节点的 key 大于等于目标 key
     }
+    // 记录每一层中最后一个小于 key 的节点，之后会在这些节点后插入新节点
     update[i] = current;
   }
 
-  // reached level 0 and forward pointer to right node, which is desired to insert key.
+  // 到达第 0 层，并且 current 指向目标插入位置的后一个节点
   current = current->forward[0];
 
-  // if current node have key equal to searched key, we get it
+  // 如果 current 节点存在并且 key 相等，说明该 key 已经存在，不需要插入
   if (current != NULL && current->get_key() == key) {
     std::cout << "key: " << key << ", exists" << std::endl;
-    _mtx.unlock();
-    return 1;
+    _mtx.unlock();  // 解锁
+    return 1;  // 返回 1 表示插入失败，因为 key 已存在
   }
 
-  // if current is NULL that means we have reached to end of the level
-  // if current's key is not equal to key that means we have to insert node between update[0] and current node
+  // 如果 current 是 NULL，表示已经到达了该层的末尾
+  // 或者如果 current 的 key 不等于目标 key，表示新节点需要插入到 update[0] 和 current 之间
   if (current == NULL || current->get_key() != key) {
-    // Generate a random level for node
+    // 为新节点生成一个随机的层数（random_level）
     int random_level = get_random_level();
 
-    // If random level is greater thar skip list's current level, initialize update value with pointer to header
+    // 如果生成的 random_level 大于当前跳表的最大层数，则更新跳表的层数
+    // 并且将 update 数组中比当前跳表层数高的部分初始化为头结点
     if (random_level > _skip_list_level) {
       for (int i = _skip_list_level + 1; i < random_level + 1; i++) {
-        update[i] = _header;
+        update[i] = _header;  // 设置新的层次指向头结点
       }
-      _skip_list_level = random_level;
+      _skip_list_level = random_level;  // 更新跳表的最大层数
     }
 
-    // create new node with random level generated
+    // 创建一个具有随机层数的新节点，并插入 key 和 value
     Node<K, V> *inserted_node = create_node(key, value, random_level);
 
-    // insert node
+    // 将新节点插入到跳表的每一层
     for (int i = 0; i <= random_level; i++) {
+      // 新节点的 forward 指向 update[i] 的 forward，即当前节点的下一个节点
       inserted_node->forward[i] = update[i]->forward[i];
+      // update[i] 的 forward 更新为新插入的节点
       update[i]->forward[i] = inserted_node;
     }
+
     std::cout << "Successfully inserted key:" << key << ", value:" << value << std::endl;
-    _element_count++;
+    _element_count++;  // 插入成功后，元素数量增加
   }
+
+  // 解锁
   _mtx.unlock();
-  return 0;
+  return 0;  // 返回 0 表示插入成功
 }
 
 // Display skip list
@@ -426,16 +438,25 @@ void SkipListDump<K, V>::insert(const Node<K, V> &node) {
   valDumpVt_.emplace_back(node.get_value());
 }
 
-// construct skip list
+// 构造跳表
 template <typename K, typename V>
 SkipList<K, V>::SkipList(int max_level) {
+  // 初始化跳表的最大层数为 max_level
   this->_max_level = max_level;
+
+  // 初始化当前跳表的层数为 0，表示跳表当前还没有任何元素（即仅有一层）
   this->_skip_list_level = 0;
+
+  // 初始化跳表中的元素数量为 0
   this->_element_count = 0;
 
-  // create header node and initialize key and value to null
-  K k;
-  V v;
+  // 创建头结点，用于在每一层的最前端，作为跳表的起点
+  // 头结点的 key 和 value 初始化为空的键和值（默认构造的K和V类型）
+  K k;  // 初始化空键
+  V v;  // 初始化空值
+
+  // 分配内存为头结点，层数为 _max_level
+  // 头结点是特殊的节点，存放在每一层的起点，用于指向跳表的第一个元素
   this->_header = new Node<K, V>(k, v, _max_level);
 };
 

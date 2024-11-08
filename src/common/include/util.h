@@ -18,41 +18,68 @@
 #include <thread>
 #include "config.h"
 
-
 //这种技术通常用于在作用域结束时执行某些清理工作，比如释放资源、关闭文件等
+// 定义一个模板类 DeferClass，模板参数 F 代表可调用对象的类型（如函数、lambda 等）
 template <class F>
 class DeferClass {
  public:
+  // 构造函数1：接收右值引用的可调用对象，使用 std::forward 完美转发
+  // 这样可以避免不必要的拷贝，并且支持传递临时对象（如 lambda 表达式）
   DeferClass(F&& f) : m_func(std::forward<F>(f)) {}
+
+  // 构造函数2：接收左值引用的可调用对象并存储在成员变量中
   DeferClass(const F& f) : m_func(f) {}
+
+  // 析构函数：在对象销毁时自动调用存储的可调用对象，确保作用域结束时执行一些操作
   ~DeferClass() { m_func(); }
 
+  // 禁用复制构造函数，防止对象被拷贝
   DeferClass(const DeferClass& e) = delete;
+
+  // 禁用赋值操作符，防止对象被赋值
   DeferClass& operator=(const DeferClass& e) = delete;
 
  private:
+  // 成员变量，存储可调用对象
   F m_func;
 };
-//将两个参数连接成一个新的标识符
+
+
+// 将两个参数 a 和 b 连接成一个新的标识符
+// 例如，_CONCAT(foo, bar) 将生成 foobar 这样的标识符
 #define _CONCAT(a, b) a##b
-// 它将在代码的当前行（通过 __LINE__ 获取）生成一个具有唯一名称的 DeferClass 实例
+
+// 使用当前行号生成一个唯一的 DeferClass 实例
+// _MAKE_DEFER_ 会创建一个 DeferClass 对象，名称通过 _CONCAT 将 "defer_placeholder" 和当前行号拼接在一起，
+// 并初始化为一个 lambda 表达式（使用 [&]() 捕获变量）
 #define _MAKE_DEFER_(line) DeferClass _CONCAT(defer_placeholder, line) = [&]()
 
+// 取消之前可能定义的 DEFER 宏，防止冲突
 #undef DEFER
+
+// 定义新的 DEFER 宏，它使用 _MAKE_DEFER_ 和当前代码行号（通过 __LINE__ 获取）生成唯一的 DeferClass 实例
+// 这样在每个使用 DEFER 的地方，都会创建一个具有唯一名称的 DeferClass 对象，确保不会重名
 #define DEFER _MAKE_DEFER_(__LINE__)
 
 void DPrintf(const char* format, ...);
 
 void myAssert(bool condition, std::string message = "Assertion failed!");
 
-// 使用可变参数模板定义了一个格式化字符串函数，可以接受任意数量和类型的参数
+// 使用可变参数模板定义了一个格式化字符串函数，能够接受任意数量和类型的参数
 template <typename... Args>
 std::string format(const char* format_str, Args... args) {
-  std::stringstream ss;
+  std::stringstream ss;  // 创建一个字符串流，用于拼接参数
+  // 利用逗号表达式展开参数包，将每个参数都插入到字符串流 ss 中
+  // 通过构造一个临时数组 _，每个元素执行 `ss << args`，然后忽略数组内容
   int _[] = {((ss << args), 0)...};
+  
+  // 通过 (void)_; 来避免未使用变量的警告
   (void)_;
+
+  // 返回拼接后的字符串
   return ss.str();
 }
+
 
 std::chrono::_V2::system_clock::time_point now();
 
@@ -112,15 +139,6 @@ class LockQueue {
   std::mutex m_mutex;
   std::condition_variable m_condvariable;
 };
-// 两个对锁的管理用到了RAII的思想，防止中途出现问题而导致资源无法释放的问题！！！
-// std::lock_guard 和 std::unique_lock 都是 C++11 中用来管理互斥锁的工具类，它们都封装了 RAII（Resource Acquisition Is
-// Initialization）技术，使得互斥锁在需要时自动加锁，在不需要时自动解锁，从而避免了很多手动加锁和解锁的繁琐操作。
-// std::lock_guard 是一个模板类，它的模板参数是一个互斥量类型。当创建一个 std::lock_guard
-// 对象时，它会自动地对传入的互斥量进行加锁操作，并在该对象被销毁时对互斥量进行自动解锁操作。std::lock_guard
-// 不能手动释放锁，因为其所提供的锁的生命周期与其绑定对象的生命周期一致。 std::unique_lock
-// 也是一个模板类，同样的，其模板参数也是互斥量类型。不同的是，std::unique_lock 提供了更灵活的锁管理功能。可以通过
-// lock()、unlock()、try_lock() 等方法手动控制锁的状态。当然，std::unique_lock 也支持 RAII
-// 技术，即在对象被销毁时会自动解锁。另外， std::unique_lock 还支持超时等待和可中断等待的操作。
 
 // 这个Op是kv传递给raft的command
 class Op {

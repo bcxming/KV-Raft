@@ -7,21 +7,17 @@ class Persister {
   std::mutex m_mtx;
   std::string m_raftState;
   std::string m_snapshot;
-  /**
-   * m_raftStateFileName: raftState文件名
-   */
+
+  //m_raftStateFileName: raftState文件名
   const std::string m_raftStateFileName;
-  /**
-   * m_snapshotFileName: snapshot文件名
-   */
+
+  //m_snapshotFileName: snapshot文件名
   const std::string m_snapshotFileName;
-  /**
-   * 保存raftState的输出流
-   */
+
+  //保存raftState的输出流
   std::ofstream m_raftStateOutStream;
-  /**
-   * 保存snapshot的输出流
-   */
+  
+  //保存snapshot的输出流
   std::ofstream m_snapshotOutStream;
   /**
    * 保存raftStateSize的大小

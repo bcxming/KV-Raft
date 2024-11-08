@@ -1,14 +1,33 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+// Debug 模式标志：设置为 true 表示启用调试模式。在调试模式下，可能会打印更多的日志信息，或者使用较短的超时时间。
+// 这个标志可以在调试时调整不同的系统参数，如心跳时间、超时时间等，便于测试。
 const bool Debug = true;
 
-const int debugMul = 1;  // 时间单位：time.Millisecond，不同网络环境rpc速度不同，因此需要乘以一个系数
+// 调试模式下的时间乘数：用于对各种时间相关参数进行缩放。在不同的网络环境下，RPC（远程过程调用）的延迟可能不同，
+// 通过乘以这个系数，可以方便地调整心跳超时、选举超时等参数。
+// 比如调试时设置为 1，生产环境可能会设置为 2 或更大。
+const int debugMul = 1;  // 时间单位：time.Millisecond，不同网络环境 rpc 速度不同，因此需要乘以一个系数
+
+// 心跳超时：表示心跳信号发送的时间间隔。心跳用于在分布式系统中保持节点间的连接活跃，防止节点失联。
+// 心跳时间一般要比选举超时小一个数量级，以确保正常通信情况下不会触发选举。
 const int HeartBeatTimeout = 25 * debugMul;  // 心跳时间一般要比选举超时小一个数量级
-const int ApplyInterval = 10 * debugMul;     //
 
-const int minRandomizedElectionTime = 300 * debugMul;  // ms
-const int maxRandomizedElectionTime = 500 * debugMul;  // ms
+// 日志应用间隔：表示状态机向上应用日志条目的间隔时间。在分布式一致性算法中，日志是系统一致性的核心。
+// 这个值越小，日志的应用频率越高，反之则应用频率降低。
+const int ApplyInterval = 10 * debugMul;     // 日志应用到状态机的时间间隔
 
-const int CONSENSUS_TIMEOUT = 500 * debugMul;  // ms
+// 选举超时时间范围（最小值）：选举超时是指一个节点如果在此时间内没有收到领导者的心跳信号，则会发起新的选举。
+// 使用随机的选举超时时间范围可以避免多个节点同时发起选举导致冲突。
+const int minRandomizedElectionTime = 300 * debugMul;  // ms，选举超时的最小值
+
+// 选举超时时间范围（最大值）：与最小值类似，选举超时的最大值用于设定随机选举超时的上限。
+// 在这个范围内，每个节点的选举超时都是随机的，以减少冲突。
+const int maxRandomizedElectionTime = 500 * debugMul;  // ms，选举超时的最大值
+
+// 一致性超时：表示在达成一致性（例如日志复制一致）所允许的最大时间。如果系统在这个时间内未能达成一致，
+// 则可能需要重新选举或采取其他修复措施。这个值通常应设置为稍大于选举超时。
+const int CONSENSUS_TIMEOUT = 500 * debugMul;  // ms，达成一致性（如日志复制）的超时时间
+
 #endif  // CONFIG_H

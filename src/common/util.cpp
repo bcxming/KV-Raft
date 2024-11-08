@@ -22,6 +22,7 @@ std::chrono::milliseconds getRandomizedElectionTimeout() {
 
   return std::chrono::milliseconds(dist(rng));
 }
+
 //用于让当前线程休眠指定的毫秒数。
 void sleepNMilliseconds(int N) { std::this_thread::sleep_for(std::chrono::milliseconds(N)); };
 
@@ -38,6 +39,7 @@ bool getReleasePort(short &port) {
   }
   return true;
 }
+
 //用于检测指定的端口是否处于可用状态（即未被占用）。
 bool isReleasePort(unsigned short usPort) {
   int s = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
@@ -53,6 +55,7 @@ bool isReleasePort(unsigned short usPort) {
   close(s);
   return true;
 }
+
 //用于在调试模式下打印日志信息。函数采用与 printf 类似的可变参数列表，允许将格式化的字符串和参数作为输入
 void DPrintf(const char *format, ...) {
   if (Debug) {
